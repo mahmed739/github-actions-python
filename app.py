@@ -16,7 +16,6 @@ def hello_world():
     This function handles incoming HTTP GET requests to the root URL ("/").
     It returns a "Hello, World!" message.
     """
-    secret = "pass123"
     return 'Hello, World From Integrant!'
 
 if __name__ == '__main__':
