@@ -10,7 +10,7 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-      - name: check Base image
+      - name: Check Base image
         run: |
           DOCKERFILE=$(find . -iname 'dockerfile')
           if [ -f "${DOCKERFILE}" ]; then
@@ -35,35 +35,6 @@ jobs:
       #   with:
       #     directory: .
       #     framework: dockerfile
-
-  build-publish:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
-      - name: Build
-        uses: docker/build-push-action@v4
-        with:
-          context: .
-          outputs: type=docker,dest=/tmp/image.tar
-          tags: user/app:latest
-      - name: Scan for vulnerabilities
-        uses: crazy-max/ghaction-container-scan@v3
-        with:
-          tarball: /tmp/image.tar
-
-
-  linting:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-      - name: Set up Python 3.8
-        uses: actions/setup-python@v4
-        with:
-          python-version: 3.8
       - name: linting
         run: |
           pip3 install pylint
@@ -77,48 +48,64 @@ jobs:
           pylint -d C0301 -d W0703 **/*.py
 
 
-  sonarcloud:
+
+  build-publish:
     runs-on: ubuntu-latest
+    needs: scan
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      #- name: Configure AWS Credentials
+      #- name: Login to Amazon ECR
+      - name: Build and push to ECR
+        run: |
+          docker build -t app:blue .
+          # docker push
+
+  security:
+    runs-on: ubuntu-latest
+    needs: build-publish
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      #- name:pull blue image
+        # run: |
+        #   docker pull app:blue
+      # local build for demo
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      - name: Build
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          outputs: type=docker,dest=/tmp/image.tar
+          tags: user/app:latest
+      - name: Scan for vulnerabilities
+        uses: crazy-max/ghaction-container-scan@v3
+        with:
+          tarball: /tmp/image.tar
+
+  test:
+    runs-on: ubuntu-latest
+    needs: security
     steps:
       - uses: actions/checkout@v3 
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@master
         env: 
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      #- name: QA test
 
-
-  unittest:
+  deploy:
     runs-on: ubuntu-latest
+    needs: test
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-      - name: Set up Python 3.8
-        uses: actions/setup-python@v4
-        with:
-          python-version: 3.8
-      - name: linting
-        env: 
-          COVERAGE_THRESHOLD: 85
+      #- name: Configure AWS Credentials
+      #- name: Login to Amazon ECR
+      - name: promote the blue image to green
         run: |
-          pip3 install pytest coverage
-          if [ -e requirements.txt ]; then
-            pip3 install --user --requirement requirements.txt
-          else
-            echo "No 'requirements.txt' file detected, skipping pip install on requirements.txt"
-            echo "If you have dependencies outside of libs shipped with python, you'll need a requirements.txt to get them pip installed here"
-            echo "Please provide your requirements.txt at the top level of your project to have it detected"
-          fi
-          mkdir coverage
-          coverage run -m pytest -s $CODE_PATH --junitxml=./coverage/junit.xml
-          coverage report -m ./*.py
-          COVERAGE_PERCENTAGE=$(coverage report -m | awk '/TOTAL/ {print $4}')
-          export COVERAGE_PERCENTAGE_INT=${COVERAGE_PERCENTAGE::-1}
-          if [ "$COVERAGE_PERCENTAGE_INT" -ge "$COVERAGE_THRESHOLD" ]; then
-            echo "Coverage percentage is greater than the threshold"
-          else
-            echo "Coverage percentage is lower than the threshold"
-            exit 1
-          fi
-          coverage xml app.py
-          mv coverage.xml coverage/coverage.xml
-
+          docker pull app:blue
+          docker tag app:blue app:latest
+          docker push app:latest
