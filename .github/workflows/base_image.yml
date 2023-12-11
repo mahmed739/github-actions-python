@@ -1,0 +1,29 @@
+---
+name: Checkov
+on:
+  push:
+    branches:
+      - main
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: check image
+        run: |
+          DOCKERFILE=$(find . -iname 'dockerfile')
+          if [ -f "${DOCKERFILE}" ]; then
+            echo Dockerfile found at $(pwd)/"${DOCKERFILE}"
+            DOCKERFILE_BASE_IMAGE=$(grep -Ei '^FROM\s+' $DOCKERFILE | awk '{print $2}');
+            if grep -q $DOCKERFILE_BASE_IMAGE allowedImages.txt; then
+              echo "Your Dockerfile Base Images are allowed. Continuing pipeline.";
+            else
+              echo "ERROR: Your Dockerfile Base images are not allowed. Aborting pipeline.";
+              echo -e '\n'"Please Review your Dockerfile and replace base images from the Approved Images Registries.";
+              exit 1;
+            fi
+          else
+            echo "Dockerfile not found."
+          fi
