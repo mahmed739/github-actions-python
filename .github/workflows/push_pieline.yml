@@ -56,24 +56,35 @@ jobs:
   #         tarball: /tmp/image.tar
 
 
-  linting:
+  # linting:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v3
+  #     - name: Set up Python 3.8
+  #       uses: actions/setup-python@v4
+  #       with:
+  #         python-version: 3.8
+  #     - name: linting
+  #       run: |
+  #         pip3 install pylint
+  #         if [ -e requirements.txt ]; then
+  #           pip3 install --user --requirement requirements.txt
+  #         else
+  #           echo "No 'requirements.txt' file detected, skipping pip install on requirements.txt"
+  #           echo "If you have dependencies outside of libs shipped with python, you'll need a requirements.txt to get them pip installed here"
+  #           echo "Please provide your requirements.txt at the top level of your project to have it detected"
+  #         fi
+  #         pylint -d C0301 -d W0703 **/*.py
+
+
+  sonarcloud:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-      - name: Set up Python 3.8
-        uses: actions/setup-python@v4
+      - uses: actions/checkout@v3
         with:
-          python-version: 3.8
-      - name: linting
-        run: |
-          pip3 install pylint
-          if [ -e requirements.txt ]; then
-            pip3 install --user --requirement requirements.txt
-          else
-            echo "No 'requirements.txt' file detected, skipping pip install on requirements.txt"
-            echo "If you have dependencies outside of libs shipped with python, you'll need a requirements.txt to get them pip installed here"
-            echo "Please provide your requirements.txt at the top level of your project to have it detected"
-          fi
-          pylint -d C0301 -d W0703 **/*.py
-          #pylint_runner -d C0301 -d W0703
+          fetch-depth: 0  
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        env: 
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}

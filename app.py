@@ -17,7 +17,6 @@ def hello_world():
     It returns a "Hello, World!" message.
     """
     return 'Hello, World From Integrant!'
-    #TODO: important
 
 if __name__ == '__main__':
     app.run()
