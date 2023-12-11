@@ -67,7 +67,7 @@ jobs:
           python-version: 3.8
       - name: linting
         run: |
-          pip3 install pylint pylint_runner
+          pip3 install pylint
           if [ -e requirements.txt ]; then
             pip3 install --user --requirement requirements.txt
           else
@@ -75,5 +75,5 @@ jobs:
             echo "If you have dependencies outside of libs shipped with python, you'll need a requirements.txt to get them pip installed here"
             echo "Please provide your requirements.txt at the top level of your project to have it detected"
           fi
-          pylint **/*.py
+          pylint -d C0301 -d W0703 **/*.py
           #pylint_runner -d C0301 -d W0703
