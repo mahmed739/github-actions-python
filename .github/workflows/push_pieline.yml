@@ -5,87 +5,86 @@ on:
     branches:
       - main
 jobs:
-  # scan:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Checkout code
-  #       uses: actions/checkout@v3
-  #     - name: check Base image
-  #       run: |
-  #         DOCKERFILE=$(find . -iname 'dockerfile')
-  #         if [ -f "${DOCKERFILE}" ]; then
-  #           echo Dockerfile found at $(pwd)/"${DOCKERFILE}"
-  #           DOCKERFILE_BASE_IMAGE=$(grep -Ei '^FROM\s+' $DOCKERFILE | awk '{print $2}');
-  #           if grep -q $DOCKERFILE_BASE_IMAGE allowedImages.txt; then
-  #             echo "Your Dockerfile Base Images are allowed. Continuing pipeline.";
-  #           else
-  #             echo "ERROR: Your Dockerfile Base images are not allowed. Aborting pipeline.";
-  #             echo -e '\n'"Please Review your Dockerfile and replace base images from the Approved Images Registries.";
-  #             exit 1;
-  #           fi
-  #         else
-  #           echo "Dockerfile not found."
-  #         fi
-  #     - name: Set up Python 3.8
-  #       uses: actions/setup-python@v4
-  #       with:
-  #         python-version: 3.8
-  #     - name: Test with Checkov
-  #       id: checkov
-  #       uses: bridgecrewio/checkov-action@master
-  #       with:
-  #         directory: .
-  #         framework: dockerfile
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: check Base image
+        run: |
+          DOCKERFILE=$(find . -iname 'dockerfile')
+          if [ -f "${DOCKERFILE}" ]; then
+            echo Dockerfile found at $(pwd)/"${DOCKERFILE}"
+            DOCKERFILE_BASE_IMAGE=$(grep -Ei '^FROM\s+' $DOCKERFILE | awk '{print $2}');
+            if grep -q $DOCKERFILE_BASE_IMAGE allowedImages.txt; then
+              echo "Your Dockerfile Base Images are allowed. Continuing pipeline.";
+            else
+              echo "ERROR: Your Dockerfile Base images are not allowed. Aborting pipeline.";
+              echo -e '\n'"Please Review your Dockerfile and replace base images from the Approved Images Registries.";
+              exit 1;
+            fi
+          else
+            echo "Dockerfile not found."
+          fi
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.8
+      # - name: Test with Checkov
+      #   uses: bridgecrewio/checkov-action@master
+      #   with:
+      #     directory: .
+      #     framework: dockerfile
 
-  # build:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Checkout
-  #       uses: actions/checkout@v3
-  #     - name: Set up Docker Buildx
-  #       uses: docker/setup-buildx-action@v2
-  #     - name: Build
-  #       uses: docker/build-push-action@v4
-  #       with:
-  #         context: .
-  #         outputs: type=docker,dest=/tmp/image.tar
-  #         tags: user/app:latest
-  #     - name: Scan for vulnerabilities
-  #       uses: crazy-max/ghaction-container-scan@v3
-  #       with:
-  #         tarball: /tmp/image.tar
-
-
-  # linting:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Checkout
-  #       uses: actions/checkout@v3
-  #     - name: Set up Python 3.8
-  #       uses: actions/setup-python@v4
-  #       with:
-  #         python-version: 3.8
-  #     - name: linting
-  #       run: |
-  #         pip3 install pylint
-  #         if [ -e requirements.txt ]; then
-  #           pip3 install --user --requirement requirements.txt
-  #         else
-  #           echo "No 'requirements.txt' file detected, skipping pip install on requirements.txt"
-  #           echo "If you have dependencies outside of libs shipped with python, you'll need a requirements.txt to get them pip installed here"
-  #           echo "Please provide your requirements.txt at the top level of your project to have it detected"
-  #         fi
-  #         pylint -d C0301 -d W0703 **/*.py
+  build-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      - name: Build
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          outputs: type=docker,dest=/tmp/image.tar
+          tags: user/app:latest
+      - name: Scan for vulnerabilities
+        uses: crazy-max/ghaction-container-scan@v3
+        with:
+          tarball: /tmp/image.tar
 
 
-  # sonarcloud:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v3 
-  #     - name: SonarCloud Scan
-  #       uses: SonarSource/sonarcloud-github-action@master
-  #       env: 
-  #         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+  linting:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.8
+      - name: linting
+        run: |
+          pip3 install pylint
+          if [ -e requirements.txt ]; then
+            pip3 install --user --requirement requirements.txt
+          else
+            echo "No 'requirements.txt' file detected, skipping pip install on requirements.txt"
+            echo "If you have dependencies outside of libs shipped with python, you'll need a requirements.txt to get them pip installed here"
+            echo "Please provide your requirements.txt at the top level of your project to have it detected"
+          fi
+          pylint -d C0301 -d W0703 **/*.py
+
+
+  sonarcloud:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3 
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        env: 
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
 
   unittest:
