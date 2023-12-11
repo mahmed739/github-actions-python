@@ -75,4 +75,5 @@ jobs:
             echo "If you have dependencies outside of libs shipped with python, you'll need a requirements.txt to get them pip installed here"
             echo "Please provide your requirements.txt at the top level of your project to have it detected"
           fi
-          pylint_runner -d C0301 -d W0703
+          pylint **/*.py
+          #pylint_runner -d C0301 -d W0703
