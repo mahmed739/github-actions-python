@@ -115,7 +115,7 @@ jobs:
     needs: deploy
     steps:
       - name: Test production env
-        runs: echo "confirmed"
+        run: echo "confirmed"
 
   rollback:
     if:  failure()
@@ -125,11 +125,13 @@ jobs:
   #     - name: Configure AWS Credentials
   #     - name: Login to Amazon ECR
   #     - name: AWS ecr-cli command to revert the blue image 
-      - name: use the old inage tag
+  #     - name: use the old inage tag
   #       run: |
   #         docker pull app:old
   #         docker tag app:old app:latest
   #         docker push app:latest
+      - name: rollback
+        run: echo "done"
 
   clean-up:
     runs-on: ubuntu-latest
@@ -139,4 +141,4 @@ jobs:
   #     - name: Login to Amazon ECR
   #     - name: AWS ecr-cli command to delete the blue image 
       - name: Remove the blue and old tags
-        runs: echo "done"
+        run: echo "done"
