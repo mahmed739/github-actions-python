@@ -48,7 +48,6 @@ jobs:
           pylint -d C0301 -d W0703 **/*.py
 
 
-
   build-publish:
     runs-on: ubuntu-latest
     needs: scan
@@ -102,10 +101,42 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-      #- name: Configure AWS Credentials
-      #- name: Login to Amazon ECR
-      - name: promote the blue image to green
-        run: |
-          docker pull app:blue
-          docker tag app:blue app:latest
-          docker push app:latest
+  #     - name: Configure AWS Credentials
+  #     - name: Login to Amazon ECR
+  #     - name: promote the blue image to green
+  #       run: |
+  #         docker pull app:blue app:latest
+  #         docker tag app:latest app:old
+  #         docker tag app:blue app:latest
+  #         docker push app:latest app:old
+
+  post-deploy-test:
+    runs-on: ubuntu-latest
+    needs: deploy
+    steps:
+      - name: Test production env
+        runs: echo "confirmed"
+
+  rollback:
+    if:  failure()
+    runs-on: ubuntu-latest
+    needs: post-deploy-test
+    steps:
+  #     - name: Configure AWS Credentials
+  #     - name: Login to Amazon ECR
+  #     - name: AWS ecr-cli command to revert the blue image 
+      - name: use the old inage tag
+  #       run: |
+  #         docker pull app:old
+  #         docker tag app:old app:latest
+  #         docker push app:latest
+
+  clean-up:
+    runs-on: ubuntu-latest
+    needs: post-deploy-test
+    steps:
+  #     - name: Configure AWS Credentials
+  #     - name: Login to Amazon ECR
+  #     - name: AWS ecr-cli command to delete the blue image 
+      - name: Remove the blue and old tags
+        runs: echo "done"
