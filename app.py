@@ -16,7 +16,8 @@ def hello_world():
     This function handles incoming HTTP GET requests to the root URL ("/").
     It returns a "Hello, World!" message.
     """
-    return 'Hello, World From Beshlawy!'
+    return 'Hello, World From Integrant!'
+    #TODO: important
 
 if __name__ == '__main__':
     app.run()
