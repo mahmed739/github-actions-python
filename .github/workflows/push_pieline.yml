@@ -1,5 +1,5 @@
 ---
-name: ci
+name: CI
 on:
   push:
     branches:
@@ -10,6 +10,7 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+        allow-failure: true
       - name: Check Base image
         run: |
           DOCKERFILE=$(find . -iname 'dockerfile')
@@ -30,12 +31,12 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: 3.8
-      # - name: Test with Checkov
-      #   uses: bridgecrewio/checkov-action@master
-      #   with:
-      #     directory: .
-      #     framework: dockerfile
-      - name: linting
+      - name: Test with Checkov
+        uses: bridgecrewio/checkov-action@master
+        with:
+          directory: .
+          framework: dockerfile
+      - name: pylint
         run: |
           pip3 install pylint
           if [ -e requirements.txt ]; then
@@ -46,7 +47,6 @@ jobs:
             echo "Please provide your requirements.txt at the top level of your project to have it detected"
           fi
           pylint -d C0301 -d W0703 **/*.py
-
 
   build-publish:
     runs-on: ubuntu-latest
