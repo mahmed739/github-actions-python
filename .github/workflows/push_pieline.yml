@@ -78,13 +78,48 @@ jobs:
   #         pylint -d C0301 -d W0703 **/*.py
 
 
-  sonarcloud:
+  # sonarcloud:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v3 
+  #     - name: SonarCloud Scan
+  #       uses: SonarSource/sonarcloud-github-action@master
+  #       env: 
+  #         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+
+  unittest:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-        # with:
-        #   fetch-depth: 0  
-      - name: SonarCloud Scan
-        uses: SonarSource/sonarcloud-github-action@master
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.8
+      - name: linting
         env: 
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          COVERAGE_THRESHOLD: 85
+        run: |
+          pip3 install pytest coverage
+          if [ -e requirements.txt ]; then
+            pip3 install --user --requirement requirements.txt
+          else
+            echo "No 'requirements.txt' file detected, skipping pip install on requirements.txt"
+            echo "If you have dependencies outside of libs shipped with python, you'll need a requirements.txt to get them pip installed here"
+            echo "Please provide your requirements.txt at the top level of your project to have it detected"
+          fi
+          mkdir coverage
+          coverage run -m pytest -s $CODE_PATH --junitxml=./coverage/junit.xml
+          coverage report -m ./*.py
+          COVERAGE_PERCENTAGE=$(coverage report -m | awk '/TOTAL/ {print $4}')
+          export COVERAGE_PERCENTAGE_INT=${COVERAGE_PERCENTAGE::-1}
+          if [ "$COVERAGE_PERCENTAGE_INT" -ge "$COVERAGE_THRESHOLD" ]; then
+            echo "Coverage percentage is greater than the threshold"
+          else
+            echo "Coverage percentage is lower than the threshold"
+            exit 1
+          fi
+          coverage xml app.py
+          mv coverage.xml coverage/coverage.xml
+
